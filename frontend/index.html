@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Land Registry</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        input, button { margin: 5px; padding: 8px; }
+        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+<h1>Land Registry System</h1>
+
+<div class="box">
+    <h2>Search Property</h2>
+    <input id="search" placeholder="Owner name / Aadhaar / Location">
+    <button onclick="searchProperty()">Search</button>
+    <pre id="searchResult"></pre>
+</div>
+
+<div class="box">
+    <h2>Transfer Property</h2>
+    <input id="propertyId" placeholder="Property ID"><br>
+    <input id="sellerId" placeholder="Seller ID"><br>
+    <input id="buyerId" placeholder="Buyer ID"><br>
+    <input id="amount" placeholder="Amount"><br>
+    <button onclick="transfer()">Transfer</button>
+    <pre id="transferResult"></pre>
+</div>
+
+<div class="box">
+    <h2>Verify Blockchain</h2>
+    <button onclick="verify()">Run Verification</button>
+    <pre id="verifyResult"></pre>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
