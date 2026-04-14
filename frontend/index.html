@@ -1,41 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Land Registry</title>
-    <style>
-        body { font-family: Arial; margin: 40px; }
-        input, button { margin: 5px; padding: 8px; }
-        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; }
-    </style>
+    <title>Land Registry System</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h1>Land Registry System</h1>
 
-<div class="box">
-    <h2>Search Property</h2>
-    <input id="search" placeholder="Owner name / Aadhaar / Location">
-    <button onclick="searchProperty()">Search</button>
-    <pre id="searchResult"></pre>
-</div>
+<!-- SEARCH -->
+<h2>Search Property</h2>
+<input type="text" id="searchInput" placeholder="Enter name/village">
+<button onclick="search()">Search</button>
 
-<div class="box">
-    <h2>Transfer Property</h2>
-    <input id="propertyId" placeholder="Property ID"><br>
-    <input id="sellerId" placeholder="Seller ID"><br>
-    <input id="buyerId" placeholder="Buyer ID"><br>
-    <input id="amount" placeholder="Amount"><br>
-    <button onclick="transfer()">Transfer</button>
-    <pre id="transferResult"></pre>
-</div>
+<div id="searchResult"></div>
 
-<div class="box">
-    <h2>Verify Blockchain</h2>
-    <button onclick="verify()">Run Verification</button>
-    <pre id="verifyResult"></pre>
-</div>
+<hr>
 
-<script src="script.js"></script>
+<!-- TRANSFER -->
+<h2>Transfer Property</h2>
+
+<input type="number" id="parcelId" placeholder="Parcel ID">
+<input type="number" id="sellerId" placeholder="Seller ID">
+<input type="number" id="buyerId" placeholder="Buyer ID">
+<input type="number" id="amount" placeholder="Amount">
+
+<button onclick="transfer()">Transfer</button>
+
+<div id="transferResult"></div>
+
+<hr>
+
+<!-- VERIFY -->
+<h2>Verify Blockchain</h2>
+<button onclick="verify()">Verify</button>
+
+<div id="verifyResult"></div>
 
 </body>
+
+<script src="script.js"></script>
 </html>
