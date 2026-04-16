@@ -12,9 +12,9 @@ app.use(express.json());
 app.use("/api", registryRoutes);
 
 app.get("/", (req, res) => {
-    res.send("Backend running 🚀");
+    res.send("Backend running");
 });
 
 app.listen(3000, () => {
-    console.log("🚀 Server running on http://localhost:3000");
+    console.log("Server running on http://localhost:3000");
 });

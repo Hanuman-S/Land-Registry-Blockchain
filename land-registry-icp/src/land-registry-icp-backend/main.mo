@@ -2,14 +2,27 @@ import Array "mo:base/Array";
 
 persistent actor {
 
-  stable var hashes : [Text] = [];
+  // Define a block structure
+  type Block = {
+    hash : Text;
+    prevHash : Text;
+  };
 
-  public func storeHash(hash : Text) : async Text {
-    hashes := Array.append(hashes, [hash]);
+  stable var chain : [Block] = [];
+
+  // Store a new block
+  public func storeBlock(hash : Text, prevHash : Text) : async Text {
+    let newBlock : Block = {
+      hash = hash;
+      prevHash = prevHash;
+    };
+
+    chain := Array.append(chain, [newBlock]);
     return "stored";
   };
 
-  public query func getAll() : async [Text] {
-    return hashes;
+  // Get full chain
+  public query func getChain() : async [Block] {
+    return chain;
   };
 }

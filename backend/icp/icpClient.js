@@ -10,8 +10,13 @@ agent.fetchRootKey();
 
 const idlFactory = ({ IDL }) => {
     return IDL.Service({
-        storeHash: IDL.Func([IDL.Text], [IDL.Text], []),
-        getAll: IDL.Func([], [IDL.Vec(IDL.Text)], ["query"])
+        storeBlock: IDL.Func([IDL.Text, IDL.Text], [IDL.Text], []),
+        getChain: IDL.Func([], [IDL.Vec(
+            IDL.Record({
+                hash: IDL.Text,
+                prevHash: IDL.Text
+            })
+        )], ["query"])
     });
 };
 

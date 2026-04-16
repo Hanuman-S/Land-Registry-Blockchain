@@ -2,7 +2,6 @@ const db = require("../config/db");
 const { createHash } = require("../utils/hash");
 const icp = require("../icp/icpClient");
 
-// 🔍 SEARCH
 exports.search = (query) => {
     return new Promise((resolve, reject) => {
         const sql = `
@@ -24,7 +23,6 @@ exports.search = (query) => {
                 lp.village LIKE ? OR 
                 lp.survey_number LIKE ?
         `;
-
         db.query(sql, [`%${query}%`, `%${query}%`, `%${query}%`], 
         (err, results) => {
             if (err) return reject(err);
@@ -33,13 +31,10 @@ exports.search = (query) => {
     });
 };
 
-// TRANSFER
 exports.transfer = (data) => {
     return new Promise((resolve, reject) => {
-
         const { parcelId, sellerId, buyerId, amount } = data;
 
-        // Check owner
         db.query(
             "SELECT * FROM ownership_records WHERE parcel_id=? AND is_current=TRUE",
             [parcelId],
@@ -52,7 +47,6 @@ exports.transfer = (data) => {
                 if (result[0].owner_id != sellerId)
                     return resolve({ error: "Seller not owner" });
 
-                // Insert registration
                 const docNo = "DOC" + Date.now();
 
                 db.query(
@@ -63,7 +57,6 @@ exports.transfer = (data) => {
                     (err) => {
                         if (err) return reject(err);
 
-                        // Update ownership
                         db.query(
                             `UPDATE ownership_records 
                              SET is_current=FALSE, end_date=NOW()
@@ -76,26 +69,41 @@ exports.transfer = (data) => {
                                     `INSERT INTO ownership_records (parcel_id, owner_id)
                                      VALUES (?, ?)`,
                                     [parcelId, buyerId],
-                                    (err) => {
+                                    async (err) => {
                                         if (err) return reject(err);
 
-                                        // HASH
-                                        const txHash = createHash(
-                                            `${parcelId}${sellerId}${buyerId}${amount}${docNo}`
-                                        );
+                                        try{
+                                            // HASH
+                                            const chain = await icp.getChain();
 
-                                        console.log("Generated Hash:", txHash);
+                                            const prevHash = chain.length === 0
+                                            ? "GENESIS"
+                                            : chain[chain.length - 1].hash;
 
-                                        //  STORE IN ICP
-                                        icp.storeHash(txHash)
-                                            .then((res) => console.log("ICP SUCCESS:", res))
-                                            .catch(err => console.error("ICP ERROR:", err));
+                                            const txData = `${parcelId}${sellerId}${buyerId}${amount}${docNo}`;
 
-                                        resolve({
-                                            message: "Transfer successful",
-                                            document_number: docNo,
-                                            hash: txHash
-                                        });
+                                            const txHash = createHash(prevHash + txData);
+
+                                            console.log("Prev Hash:", prevHash);
+                                            console.log("New Hash:", txHash);
+
+                                            try{
+                                                // store block
+                                                await icp.storeBlock(txHash, prevHash);
+                                            } catch (err) {
+                                                return reject("Blockchain write failed");
+                                            }
+                                            
+
+                                            resolve({
+                                                message: "Transfer successful",
+                                                document_number: docNo,
+                                                hash: txHash
+                                            });
+                                        }
+                                        catch (e) {
+                                            reject(e);
+                                        }
                                     }
                                 );
                             }
@@ -107,7 +115,6 @@ exports.transfer = (data) => {
     });
 };
 
-// VERIFY
 exports.verifyWithBlockchain = () => {
     return new Promise(async (resolve, reject) => {
         try {
@@ -116,50 +123,36 @@ exports.verifyWithBlockchain = () => {
                 async (err, records) => {
                     if (err) return reject(err);
 
-                    // get hashes from ICP
-                    const rawHashes = await icp.getAll();
+                    const chain = await icp.getChain();
 
-                    // normalize ICP output (handles {_0: "..."} issue)
-                    const icpHashes = rawHashes.map(h =>
-                        typeof h === "string" ? h : h._0
-                    );
-
-                    // create local hashes
-                    const localHashes = records.map(r =>
-                        createHash(
-                            `${r.parcel_id}${r.seller_id}${r.buyer_id}${Number(r.sale_amount)}${r.document_number}`
-                        )
-                    );
-
-                    // DEBUG (optional — remove later)
-                    console.log("DB count:", localHashes.length);
-                    console.log("ICP count:", icpHashes.length);
-                    console.log("Local:", localHashes);
-                    console.log("ICP:", icpHashes);
-
-                    // if counts mismatch → definitely invalid
-                    if (localHashes.length !== icpHashes.length) {
+                    if (records.length !== chain.length) {
                         return resolve({
                             valid: false,
-                            error: "Mismatch in number of transactions"
+                            error: "Length mismatch"
                         });
                     }
 
-                    // sort both arrays to avoid order issues
-                    localHashes.sort();
-                    icpHashes.sort();
+                    let prevHash = "GENESIS";
 
-                    //  compare
-                    for (let i = 0; i < localHashes.length; i++) {
-                        if (localHashes[i] !== icpHashes[i]) {
+                    for (let i = 0; i < records.length; i++) {
+                        const r = records[i];
+
+                        const txData = `${r.parcel_id}${r.seller_id}${r.buyer_id}${Number(r.sale_amount)}${r.document_number}`;
+
+                        const expectedHash = createHash(prevHash + txData);
+
+                        const block = chain[i];
+
+                        if (block.hash !== expectedHash || block.prevHash !== prevHash) {
                             return resolve({
                                 valid: false,
-                                error: "Blockchain mismatch detected"
+                                error: `Tampering detected at block ${i}`
                             });
                         }
+
+                        prevHash = block.hash;
                     }
 
-                    // all good
                     resolve({ valid: true });
                 }
             );
